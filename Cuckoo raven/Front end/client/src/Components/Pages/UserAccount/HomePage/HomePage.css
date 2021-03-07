@@ -1,0 +1,19 @@
+.houses-container {
+  padding: 20px;
+  margin: auto 0;
+  align-self: center;
+  box-sizing: border-box;
+}
+
+.filter-button {
+  position: absolute;
+  top: -45px;
+  right: 10px;
+}
+
+.app-head {
+  position: absolute;
+  top: -15px;
+  left: 10px;
+  height: fit-content;
+}
