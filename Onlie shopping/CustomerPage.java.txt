@@ -1,0 +1,319 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.border.MatteBorder;
+import javax.swing.event.*;
+
+class CustomerPage extends JFrame implements ActionListener,ListSelectionListener {
+
+	String username;
+	JLabel nameLabel;
+	JList shopListView;
+	DefaultListModel listModel;
+	DatabaseHandler database;
+	JButton myCartButton,goButton,filterButton,myOrdersButton;
+	ArrayList<ShopInfo> shopList;
+	JComboBox shopTypeBox,shopCityBox; 
+	JPanel filtersPanel;
+	JScrollPane scrollableListView;
+	JLabel noShopLabel,backgroundLabel;
+	JPopupMenu popupMenu;
+	JMenuItem logout,deleteAccount;
+	
+	CustomerPage(String username,ArrayList passedShopList,int typeIndex,int cityIndex){
+		this.username=username;
+		database=new DatabaseHandler();
+		listModel=new DefaultListModel();
+		myCartButton=new JButton("My Cart");
+		myOrdersButton=new JButton("My Orders");
+		noShopLabel=new JLabel("No Results found !");
+		noShopLabel.setForeground(Color.RED);
+		noShopLabel.setFont(new Font("sanseriff",Font.BOLD,24));
+		noShopLabel.setBounds(150,220,300,50);
+		filtersPanel=new JPanel();
+		filterButton=new JButton("Filter");
+		popupMenu=new JPopupMenu();
+		logout=new JMenuItem("Logout");
+		deleteAccount=new JMenuItem("Delete Account");
+		
+		popupMenu.add(logout);
+		popupMenu.addSeparator();
+		popupMenu.add(deleteAccount);
+		
+		ArrayList typeList=new ArrayList();
+		typeList.add("TYPES");
+		typeList.add("All");
+		typeList.addAll(database.getShopTypes());
+		ArrayList cityList=new ArrayList();
+		cityList.add("CITIES");
+		cityList.add("All");
+		cityList.addAll(database.getShopCities());
+		typeList=removeDuplicates(typeList);
+		cityList=removeDuplicates(cityList);
+		shopTypeBox=new JComboBox(typeList.toArray());
+		shopCityBox=new JComboBox(cityList.toArray());
+		
+		goButton=new JButton("Go");
+		backgroundLabel=new JLabel();
+		String customerString=database.getName("CUSTOMER", username);
+		nameLabel=new JLabel("Welcome Mr."+customerString.substring(0,1).toUpperCase()+customerString.substring(1));
+		shopList=new ArrayList<ShopInfo>();
+		scrollableListView=new JScrollPane();
+		
+		int noS=0;
+		if(passedShopList==null) {
+			noShopLabel.setVisible(false);
+			//scrollableListView.setVisible(true);
+			noS=0;
+			shopList=database.getShops();
+		}
+		else if(passedShopList.isEmpty()) {
+			
+			shopTypeBox.setSelectedIndex(typeIndex);
+			shopCityBox.setSelectedIndex(cityIndex);
+			noS=1;
+			noShopLabel.setVisible(true);
+			
+		}
+		else {
+			
+			shopList=passedShopList;
+			shopTypeBox.setSelectedIndex(typeIndex);
+			shopCityBox.setSelectedIndex(cityIndex);
+			noShopLabel.setVisible(false);
+			noS=0;
+			//scrollableListView.setVisible(true);
+		}
+		for(int i=0;i<shopList.size();i++) {
+			ShopInfo shopInfo=shopList.get(i);
+			listModel.addElement(shopInfo.shopName);
+		}
+		shopListView=new JList(listModel);
+		shopListView.setFixedCellHeight(50);
+		shopListView.setFixedCellWidth(50);
+		
+		shopListView.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		
+		scrollableListView=new JScrollPane(shopListView);
+		if (noS==1) {
+			scrollableListView.setVisible(false);
+		}
+		else {
+			scrollableListView.setVisible(true);
+		}
+		
+		nameLabel.setBounds(130,70,300,40);
+		myCartButton.setBounds(0,0,120,40);
+		myOrdersButton.setBounds(460,0,130,40);
+		filtersPanel.setBounds(120,0,340,40);
+		goButton.setBounds(200,350,100,40);
+		scrollableListView.setBounds(130,150,300,200);
+		
+		shopListView.addListSelectionListener(this);
+		myCartButton.addActionListener(this);
+		myOrdersButton.addActionListener(this);
+		goButton.addActionListener(this);
+		filterButton.addActionListener(this);
+		logout.addActionListener(this);
+		deleteAccount.addActionListener(this);
+		
+		myOrdersButton.setBackground(Color.WHITE);
+		myCartButton.setBackground(Color.WHITE);
+		filtersPanel.setBackground(Color.WHITE);
+		filtersPanel.setBorder(new MatteBorder(1, 1, 1, 1, Color.BLACK));
+		nameLabel.setFont(new Font("Timesroman",Font.BOLD,20));
+		
+		try {
+			BufferedImage ordersIcon = ImageIO.read(new File(new ConstantPath().ICONS_URL + "ordersIcon.jpg"));
+			Image scaledIcon = ordersIcon.getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+			myOrdersButton.setIcon(new ImageIcon(scaledIcon));
+			myCartButton.setIcon(new ImageIcon(scaledIcon));
+			BufferedImage background=ImageIO.read(new File(new ConstantPath().ICONS_URL+"appLogo10.jpg"));
+			scaledIcon=background.getScaledInstance(740, 500, Image.SCALE_SMOOTH);
+			backgroundLabel.setIcon(new ImageIcon(scaledIcon));
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, "Icon error");
+		}
+		
+		filtersPanel.add(shopTypeBox);
+		filtersPanel.add(shopCityBox);
+		filtersPanel.add(filterButton);
+		setContentPane(backgroundLabel);
+		add(myOrdersButton);
+		add(noShopLabel);
+		add(filtersPanel);
+		add(nameLabel);
+		add(myCartButton);
+		//add(goButton);
+		setResizable(false);
+		add(scrollableListView);
+		
+addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mousePressed(MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e)) {
+					popupMenu.show(CustomerPage.this, e.getX(), e.getY());
+				}
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				
+			}
+			
+		});
+		
+		frameInitialize();
+	}
+	private void frameInitialize() {
+		setSize(600, 500);
+		setLocation(400, 100);
+		setTitle("Customer Page");
+		setLayout(null);
+		setVisible(true);
+	}
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if(e.getSource()==myCartButton) {
+			setVisible(false);
+			new CustomerCart(username);
+			
+		}
+		if(e.getSource()==myOrdersButton) {
+			setVisible(false);
+			new CustomerOrders(username);
+		}
+		if(e.getSource()==filterButton) {
+			String shopType=(String) shopTypeBox.getSelectedItem();
+			String shopCity=(String) shopCityBox.getSelectedItem();
+			if(shopType.equalsIgnoreCase("TYPES")&&shopCity.equalsIgnoreCase("CITIES")) {
+				JOptionPane.showMessageDialog(this, "Select any filters");
+			}
+			else if((shopType.equalsIgnoreCase("All")&&shopCity.equalsIgnoreCase("CITIES"))
+					||(shopType.equalsIgnoreCase("TYPES")&&shopCity.equalsIgnoreCase("All"))
+					||(shopType.equalsIgnoreCase("All")&&shopCity.equalsIgnoreCase("All"))) {
+				shopList=new ArrayList();
+				shopList=database.getShops();
+				setVisible(false);
+				new CustomerPage(username,shopList,shopTypeBox.getSelectedIndex(),shopCityBox.getSelectedIndex());
+			}
+			else if(shopType.equalsIgnoreCase("All")||shopType.equalsIgnoreCase("TYPES")) {
+				shopList=new ArrayList();
+				shopList=database.getShopsWithCity(shopCity);
+				setVisible(false);
+				new CustomerPage(username,shopList,shopTypeBox.getSelectedIndex(),shopCityBox.getSelectedIndex());
+			}
+			else if(shopCity.equalsIgnoreCase("All")||shopCity.equalsIgnoreCase("CITIES")) {
+				shopList=new ArrayList();
+				shopList=database.getShopsWithType(shopType);
+				setVisible(false);
+				new CustomerPage(username,shopList,shopTypeBox.getSelectedIndex(),shopCityBox.getSelectedIndex());
+			}
+			else {
+				shopList=new ArrayList();
+				shopList=database.getShopsWithTypeAndCity(shopType,shopCity);
+				setVisible(false);
+				new CustomerPage(username,shopList,shopTypeBox.getSelectedIndex(),shopCityBox.getSelectedIndex());
+				//JOptionPane.showMessageDialog(this, shopType+"\n"+shopCity);
+			}
+		}
+		if(e.getSource()==goButton) {
+			if(shopListView.isSelectionEmpty()) {
+				JOptionPane.showMessageDialog(this,"Select some shop");
+			}
+			else {
+				JOptionPane.showMessageDialog(this,shopListView.getSelectedValue());
+			}	
+		}
+		if (e.getSource()==logout) {
+			int n=JOptionPane.showConfirmDialog(this, "Are you sure want to exit?");
+			if (JOptionPane.YES_OPTION==n) {
+				dispose();
+				new LoginPage();
+			}
+		}
+		if (e.getSource()==deleteAccount) {
+			int n=JOptionPane.showConfirmDialog(this, "Are you sure want to delete your account?");
+			if (JOptionPane.YES_OPTION==n) {
+				database.deleteCustomer(username);
+				dispose();
+				new LoginPage();
+			}
+		}
+	}
+	
+	@Override
+	public void valueChanged(ListSelectionEvent e) {
+		String data="";
+		int index=shopListView.getSelectedIndex();
+		data+="Shop name : "+shopList.get(index).shopName+"\nType : "+shopList.get(index).shopType+"\nCity : "+shopList.get(index).shopCity;
+		JOptionPane.showMessageDialog(this, data);
+		setVisible(false);
+		new CustomerOrderPage(username,shopList.get(index).username,0);
+	}
+	private ArrayList removeDuplicates(ArrayList categoryList) {
+		for(int i=0;i<categoryList.size();i++) {
+			for(int j=i+1;j<categoryList.size();j++) {
+				if(String.valueOf(categoryList.get(i)).equalsIgnoreCase(String.valueOf(categoryList.get(j)))) {
+					categoryList.remove(j);
+				}
+			}
+		}
+		return categoryList;
+	}
+}
+
+class ShopInfo{
+	
+	public String username;
+	public String shopName;
+	public String shopType;
+	public String shopCity;
+	
+	public ShopInfo(String username,String shopName,String shopType,String shopCity) {
+		this.username=username;
+		this.shopName=shopName;
+		this.shopType=shopType;
+		this.shopCity=shopCity;
+	}
+	
+}
+
+class ShopkeeperInfo{
+	
+	public String username;
+	public String shopkeeperName;
+	public String shopkeeperContact;
+	
+	public ShopkeeperInfo(String username,String shopkeeperName,String shopkeeperContact) {
+		
+		this.username=username;
+		this.shopkeeperName=shopkeeperName;
+		this.shopkeeperContact=shopkeeperContact;
+	}
+}
